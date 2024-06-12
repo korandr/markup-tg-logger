@@ -1,0 +1,3 @@
+* text=auto
+*.md linguist-documentation=903
+*.ru.md linguist-documentation=932
