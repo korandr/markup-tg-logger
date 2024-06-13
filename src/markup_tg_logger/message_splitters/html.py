@@ -1,5 +1,4 @@
 from typing import override, List, Tuple, TypeAlias
-from html.parser import HTMLParser
 
 from .base import BaseMessageSplitter
 
@@ -55,7 +54,7 @@ class HtmlMessageSplitter(BaseMessageSplitter):
             if pop != '': self._handle_data(pop)
             index = data.index('>')
             pop, data = data[:index], data[index+1:]
-            if '/' in pop:
+            if pop[0] == '/':
                 self._handle_endtag(pop[1:])
             else:
                 elements = pop.split(' ')
