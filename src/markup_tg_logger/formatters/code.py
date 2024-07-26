@@ -4,10 +4,11 @@ from html import escape
 
 from ..types import FormatStyle
 from ..config import HTML_CODE_TEMPLATE
-from .html import HtmlTelegramFormatter
+from ..message_splitters import HtmlMessageSplitter
+from .base import BaseTelegramFormatter
     
 
-class CodeTelegramFormatter(HtmlTelegramFormatter):
+class CodeTelegramFormatter(BaseTelegramFormatter):
     @override
     def __init__(
             self,
@@ -16,14 +17,16 @@ class CodeTelegramFormatter(HtmlTelegramFormatter):
             style: FormatStyle = '%',
         ) -> None:
 
-        super().__init__(fmt, datefmt, style, is_escape_markup=True)
+        super().__init__(fmt, datefmt, style)
 
         self._TEMPLATE = HTML_CODE_TEMPLATE
+        self._splitter = HtmlMessageSplitter()
     
     @override
     def format(self, record: LogRecord) -> List[str]:
         self._prepare_record(record)
         text = Formatter.format(self, record)
+        text = escape(text, quote=False)
 
         text = self._TEMPLATE.format(text=text)
         
