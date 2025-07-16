@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "markup-tg-logger"
-version = "1.0.0rc1"
+version = "1.0.0"
 authors = [{ name="korandr", email="andrey.korovyansky@gmail.com" }]
 description = "Flexible integration of logging module and Telegram Bot Api with HTML support"
 readme = "README.md"
@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Topic :: System :: Logging",
     "Topic :: Communications :: Chat",
     "Topic :: Text Processing :: Markup",
@@ -25,6 +25,8 @@ classifiers = [
     "Topic :: Documentation",
     "Intended Audience :: Developers"
 ]
+license = "MIT"
+license-files = ["LICENSE"]
 
 [project.urls]
 Github = "https://github.com/korandr/markup-tg-logger"
