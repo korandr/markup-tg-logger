@@ -1,18 +1,20 @@
-import time
 import logging
+import os
+import time
 
-from markup_tg_logger import BaseTelegramFormatter, BaseTelegramHandler, LevelNotifier
-
-from config import BOT_TOKEN, CHAT_ID
+from markup_tg_logger import BaseMarkupFormatter, TelegramHandler, LevelNotifier
 
 
-formatter = BaseTelegramFormatter(
+BOT_TOKEN = os.environ['BOT_TOKEN']
+CHAT_ID = int(os.environ["CHAT_ID"])
+
+formatter = BaseMarkupFormatter(
     fmt = '{levelname}\n{asctime}\n\n{message}',
     datefmt = '%d-%m-%Y %H:%M:%S',
     style = '{'
 )
 
-handler = BaseTelegramHandler(
+handler = TelegramHandler(
     bot_token = BOT_TOKEN,
     chat_id = CHAT_ID,
     disable_notification = LevelNotifier(logging.ERROR)
@@ -28,4 +30,3 @@ logger.addHandler(handler)
 logger.info('Message without notification')
 time.sleep(5)
 logger.critical('Important notification message')
-

@@ -2,17 +2,22 @@ import logging
 import os
 
 from markup_tg_logger import TelegramHandler, HtmlFormatter
-from markup_tg_logger.defaults import HTML_PYTHON_TEMPLATE, HTML_BASH_TEMPLATE
 
 
 BOT_TOKEN = os.environ['BOT_TOKEN']
 CHAT_ID = int(os.environ["CHAT_ID"])
 
+FMT = (
+    '<b>{levelname}</b>\n\n'
+    '<u>{asctime}</u>\n\n'
+    '<i>{message}</i>\n\n'
+    '(Line: {lineno} [<code>{pathname}</code>])'
+)
+
 formatter = HtmlFormatter(
-    fmt = '<b>{levelname}</b>\n\n{message}',
+    fmt = FMT,
+    datefmt = '%d-%m-%Y %H:%M:%S',
     style = '{',
-    exception_template = HTML_PYTHON_TEMPLATE,
-    stack_info_template = HTML_BASH_TEMPLATE,
 )
 
 handler = TelegramHandler(
@@ -26,9 +31,4 @@ logger = logging.getLogger('example')
 logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
-logger.info('Message with stack_info option in bash code block', stack_info=True)
-
-try:
-    raise Exception('Example exception in python code block')
-except Exception as e:
-    logger.exception(e)
+logger.info('Hello HTML world!\nAny special characters: > < &')

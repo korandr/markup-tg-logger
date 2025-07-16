@@ -1,74 +1,28 @@
 from collections.abc import Mapping
-import html
+from logging import LogRecord
 from typing import override, Any
 
 from ..defaults import DEFAULT_LEVEL_NAMES
-from ..types import FormatStyle, EscapeFunc
-from .escape import EscapeMarkupFormatter
+from ..types import FormatStyle, SysExcInfoType, EscapeFunc, ParseMode
+from .base import BaseMarkupFormatter
     
 
-class HtmlFormatter(EscapeMarkupFormatter):
-    """A formatter for using HTML markup and flexible escaping settings.
-    
-    Equivalent to `EscapeMarkupFormatter` with `parse_mode` and `escape_func` parameters preset.
+class EscapeMarkupFormatter(BaseMarkupFormatter):
+    """A formatter for setting up the escaping of special characters of the selected markup language.
 
-    Common use cases:
-
-    1. HTML is used directly when calling the logger.
-    For example, `logger.info('<u>example</u> text')`.
-
-    In this case, it is necessary to disable message escaping. Control of special characters
-    remains with the user. If stack and traceback output are used by default, it is recommended
-    to leave their escaping enabled.
-
+    Example for HTML:
     ```python
-    formatter = HtmlFormatter(
-        fmt = '<b>{levelname}</b> {message}',
+    import html
+
+    formatter = EscapeMarkupFormatter(
+        fmt = '<b>{levelname}</b> <u>{asctime}</u> <i>{message}</i> <code>{pathname}</code>',
         style = '{',
-        escape_message = False,
+        parse_mode = 'HTML',
+        escape_func = lambda text: html.escape(text, quote=False),
+        stack_info_tamplate = '<code>{text}</code>',
+        exception_template = '<code>{text}</code>',
     )
     ```
-
-    2. HTML is used in the `fmt` string and is not used within messages.
-
-    In this case, the default escaping settings are sufficient, just adjust the `fmt` line.
-    Optionally, you may want to wrap the stack and traceback output in a code block. To do this,
-    either manually specify your preferred template, or import a ready-made template from the
-    library defaults.
-
-    ```python
-    from markup_tg_logger.defaults import HTML_PYTHON_TEMPLATE
-
-    formatter = HtmlFormatter(
-        fmt = '<b>{levelname}</b> <i>{message}</i>',
-        style = '{',
-        stack_info_template = HTML_PYTHON_TEMPLATE,
-        exception_template = HTML_PYTHON_TEMPLATE,
-    )
-    ``` 
-
-    The `HTML_PYTHON_TEMPLATE` constant is a `<pre><code class="language-python">{text}</code></pre>`
-    template for formatting text into a code block with python syntax highlighting. If you prefer
-    bash highlighting, use the `HTML_BASH_TEMPLATE` constant or define your own template.
-
-    3. Formatting the entire log output into a block with code and no markup inside that block.
-
-    In this case, disable message, stack and traceback escaping and enable formatting result
-    escaping. Also set the general template as described in point 2.
-
-    ```python
-    from markup_tg_logger.defaults import HTML_PYTHON_TEMPLATE
-
-    formatter = HtmlFormatter(
-        fmt = '{levelname} {message}',
-        style = '{',
-        escape_message = False,
-        escape_stack_info = False,
-        escape_exception = False,
-        escape_result = True,
-        result_template = HTML_PYTHON_TEMPLATE,
-    )
-    ``` 
     """
 
     @override
@@ -81,14 +35,15 @@ class HtmlFormatter(EscapeMarkupFormatter):
         *,
         defaults: Mapping[str, Any] | None = None,
         level_names: dict[int, str] = DEFAULT_LEVEL_NAMES,
-        escape_func: EscapeFunc = lambda text: html.escape(text, quote=False),
+        parse_mode: ParseMode = '',
+        escape_func: EscapeFunc = lambda text: text,
         escape_message: bool = True,
         escape_stack_info: bool = True,
         escape_exception: bool = True,
         escape_result: bool = False,
         stack_info_template: str = '{text}',
         exception_template: str = '{text}',
-        result_template: str = '{text}'
+        result_template: str = '{text}',
     ) -> None:
         """
         Args:
@@ -104,17 +59,18 @@ class HtmlFormatter(EscapeMarkupFormatter):
                 to the logging methods. However, there are other ways to use {- and $-formatting
                 for log messages.
             validate:  If `True` (the default), incorrect or mismatched `fmt` and `style` will
-                raise a `ValueError`; for example, `HtmlFormatter('%(message)s', style='{')`.
+                raise a `ValueError`; for example, `EscapeMarkupFormatter('%(message)s', style='{')`.
             defaults:
                 A dictionary with default values to use in custom fields. For example,
-                `HtmlFormatter('%(ip)s %(message)s', defaults={"ip": None})`.
+                `EscapeMarkupFormatter('%(ip)s %(message)s', defaults={"ip": None})`.
             level_names: Mapping between numeric logging level IDs and their names. For example,
                 `{30: 'WARN'}` or `{logging.WARNING: 'WARN'}`. By default, names will be appended
                 with colored emoji. The dictionary does not have to override all level names.
                 To use the default names, use `level_names = {}`.
+            parse_mode: The markup language that Telegram needs to parse to display formatted text.
+                Defaults to `''` (Plain Text).
             escape_func: The function that will be used to escape special characters. By default,
-                the `escape` function with `quote=False` from the `html` module of the standard
-                library is used. 
+                the function does not perform escaping.
             escape_message: If `True`(the default), escape the log message text.
             escape_stack_info: If `True` (the default), escape stack output.
             escape_exception: If `True` (the default), escape traceback exception output.
@@ -122,15 +78,16 @@ class HtmlFormatter(EscapeMarkupFormatter):
                 this option, it is recommended to disable `escape_message`, `escape_stack_info`and
                 `escape_exception` to avoid repeated escaping.
             stack_info_template: A template string with a single required parameter `{text}` for
-                marking up stack info text. For example, `'<code>{text}</code>'`. By default, does
-                not change the text.
+                marking up stack info text. For example, `'<code>{text}</code>'` for HTML.
+                By default, does not change the text.
             exception_template: A template string with a single required parameter `{text}` for
-                marking up the traceback output. For example, `'<code>{text}</code>'`. By default,
-                does not change the text.
+                marking up the traceback output. For example, `'<code>{text}</code>'` for HTML.
+                By default, does not change the text.
             result_template: A template string with a single required parameter `{text}` for
                 marking up the resulting message after all formatting. The `text` parameter
                 includes the result of substitution into the `fmt` string, stack info and exception
-                traceback. For example, `'<code>{text}</code>'`. By default, does not change the text.
+                traceback. For example, `'<code>{text}</code>'` for HTML. By default, does not
+                change the text.
 
         There is no separate `message_template` parameter in templates, since this functionality is
         implemented through the standard `fmt` string. For example, `fmt = '<code>{message}</code>'`.
@@ -143,13 +100,61 @@ class HtmlFormatter(EscapeMarkupFormatter):
             validate = validate,
             defaults = defaults,
             level_names = level_names,
-            parse_mode = 'HTML',
-            escape_func = escape_func,
-            escape_message = escape_message,
-            escape_stack_info = escape_stack_info,
-            escape_exception = escape_exception,
-            escape_result = escape_result,
-            stack_info_template = stack_info_template,
-            exception_template = exception_template,
-            result_template = result_template,
+            parse_mode = parse_mode,
         )
+
+        self._escape_func = escape_func
+        self._escape_message = escape_message
+        self._escape_stack_info = escape_stack_info
+        self._escape_excpetion = escape_exception
+        self._escape_result = escape_result
+        self._stack_info_template = stack_info_template
+        self._exception_template = exception_template
+        self._result_template = result_template
+    
+    @override
+    def formatMessage(self, record: LogRecord) -> str:
+        if record.getMessage() and self._escape_message:
+            record.msg = self._escape_func(record.getMessage())
+
+        return super().formatMessage(record)
+
+    @override
+    def formatException(self, ei: SysExcInfoType) -> str:
+        text = super().formatException(ei)
+
+        if self._escape_excpetion:
+            text = self._escape_func(text)
+
+        text = self._exception_template.format(text=text)
+
+        return text
+    
+    @override
+    def formatStack(self, stack_info: str) -> str:
+        text = super().formatStack(stack_info)
+
+        if self._escape_stack_info:
+            text = self._escape_func(text)
+
+        text = self._stack_info_template.format(text=text)
+
+        return text
+    
+    @override
+    def _pre_format(self, record: LogRecord) -> None:
+        if record.getMessage() and self._escape_message:
+            record.msg = self._escape_func(record.getMessage())
+
+        super()._pre_format(record)
+
+    @override
+    def _post_format(self, text: str) -> str:
+        text = super()._post_format(text)
+
+        if self._escape_result:
+            text = self._escape_func(text)
+
+        text = self._result_template.format(text=text)
+
+        return text

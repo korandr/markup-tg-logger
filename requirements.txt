@@ -1,0 +1,15 @@
+certifi==2025.7.14
+charset-normalizer==3.4.2
+idna==3.10
+iniconfig==2.1.0
+mypy==1.17.0
+mypy_extensions==1.1.0
+packaging==25.0
+pathspec==0.12.1
+pluggy==1.6.0
+Pygments==2.19.2
+pytest==8.4.1
+requests==2.32.4
+types-requests==2.32.4.20250611
+typing_extensions==4.14.1
+urllib3==2.5.0
