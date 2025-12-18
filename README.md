@@ -26,6 +26,9 @@ while maintaining valid markup during splitting.
     - [Notification Settings](#notification-settings)
     - [Splitting Long Texts](#splitting-long-texts)
     - [API Adapters](#api-adapters)
+    - [Configuration](#configuration)
+        - [Using python dictionary](#using-python-dictionary)
+        - [Using JSON or YAML configuration file](#using-json-or-yaml-configuration-file)
     - [Code of the given examples](#code-of-the-given-examples)
 - [Documentation](#documentation)
     - [Structure](#structure)
@@ -250,6 +253,142 @@ handler = TelegramHandler(
 )
 ```
 
+### Configuration
+
+The library supports configuration using the standard
+[`logging.config`](https://docs.python.org/3/library/logging.config.html) module and based on
+[user-defined objects](https://docs.python.org/3/library/logging.config.html#user-defined-objects)
+via `dictConfig` function.
+
+#### Using python dictionary
+
+For starters, you can use the configuration dictionary defined in your code and import library
+objects directly.
+
+```python
+import logging
+import markup_tg_logger
+
+config = {
+    'version': 1,
+    'handlers': {
+        'telegram': {
+            '()': markup_tg_logger.TelegramHandler,
+            'level': 'DEBUG',
+            'formatter': 'telegram',
+            'bot_token': 'bot_token',
+            'chat_id': 12345,
+        },
+    },
+    'loggers': {
+        'example': {},
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['telegram'],
+    },
+}
+
+dictConfigClass(config).configure()
+logger = logging.getLogger('example')
+logger.info('This message sended via markup-tg-logger')
+```
+
+User-defined objects format defines the `'()'` special key, which is used to specify the custom
+class. The remaining dictionary keys will be passed to the constructor of the specified class.
+You can use other library objects in the same way as in the `TelegramHandler` class constructor.
+For exmaple, you can specify `'disable_notification': LevelNotifier(logging.ERROR)`.
+
+Formatters can be used in the same way:
+
+```python
+config = {
+    'formatters': {
+        'telegram': {
+            '()': markup_tg_logger.HtmlFormatter,
+            'fmt': '<b>{levelname}</b> <code>{message}</code>',
+            'style': '{',
+            ...
+        },
+    },
+    'handlers': {
+        'telegram': {
+            '()': markup_tg_logger.TelegramHandler,
+            'formatter': 'telegram', # insert name of your formatter from `formatters` section
+            ...
+        },
+    },
+    ...
+}
+```
+
+#### Using JSON or YAML configuration file
+
+In configuration file you can't use imported library objects directly, but you can specify a
+import path as a string:
+
+```json
+{
+    "handlers": {
+        "telegram": {
+            "()": "markup_tg_logger.TelegramHandler",
+            "level": "DEBUG",
+            "bot_token": "bot_token",
+            "chat_id": 12345,
+        }
+    },
+    ...
+}
+```
+
+Load the configuration as a dictionary and use it as in the previous example:
+
+```python
+import json
+
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
+dictConfigClass(config).configure()
+logger = logging.getLogger('example')
+logger.info('This message sended via markup-tg-logger')
+```
+
+To pass notifiers and other classes in `TelegramHandler` arguments the library provides the ability
+to use similar dictionaries with `"()"` keys:
+
+```json
+{
+    "handlers": {
+        "telegram": {
+            "()": "markup_tg_logger.TelegramHandler",
+            "level": "DEBUG",
+            "bot_token": "bot_token",
+            "chat_id": 12345,
+            "disable_notification": {
+                "()": "markup_tg_logger.LevelNotifier",
+                "level": "ERROR",
+            },
+            "sender": {
+                "()": "markup_tg_logger.telegram_senders.http_client.HttpClientTelegramSender",
+            },
+            "message_splitter_factory": {
+                "": {"()": "markup_tg_logger.BaseSplitter"},
+                "HTML": {"()": "markup_tg_logger.HtmlSplitter"},
+            },
+        },
+    },
+    ...
+}
+```
+
+You can also pass your custom classes in the same way. Specified by `"()"` key value will be
+imported using standard logging import resolver.
+
+Note: this implementation does not support the
+[special `"."` keys](https://docs.python.org/3/library/logging.config.html#user-defined-objects)
+due to lack of need, but you can implement custom factory instead if needed.
+
 ### Code of the given examples
 
 [Code for the examples shown](https://github.com/korandr/markup-tg-logger/tree/main/src/examples)
@@ -275,6 +414,7 @@ Adapters for different HTTP libraries.
 - `defaults.py` - Some pre-configured values for class constructor parameters.
 - `exceptions.py` - All library exceptions.
 - `handler.py` - The central library class based on `logging.Handler`.
+- `resolve_object_from_config.py` - Utility function for working with user-defined objects.
 - `types.py` - Custom data types.
 
 ### Markdown Support

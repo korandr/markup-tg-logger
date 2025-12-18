@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Full configuration support via
+  [`logging.config.dictConfig`](https://docs.python.org/3/library/logging.config.html#logging.config.dictConfig).
+  All arguments of the `TelegramHandler` class constructor now support serializable values ​​from the
+  configuration dictionary. Class imports are resolved from string paths using the standard
+  logging import resolver.
+- Now several ids can be passed to the `chat_id` argument of the `TelegramHandler` constructor
+  not only as a set, but also as a list. The passed list will be converted into a set to avoid
+  duplication of messages to one recipient.
+- Added an [example](https://github.com/korandr/markup-tg-logger/tree/main/src/examples/config_example.py)
+  of configuring a logger from a dictionary. More detailed examples of configuration have been
+  added to `README.md`.
+
 ### Changed
 - Improved handling of malformed HTML code when splitting text into messages using
   `HtmlMessageSplitter`. Now throws explicit, informative exceptions when encountering issues

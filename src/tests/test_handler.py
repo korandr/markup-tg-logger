@@ -2,7 +2,9 @@
 
 import logging
 from logging import LogRecord
-from typing import Any, override
+from typing import Any, override, Literal
+
+import pytest
 
 from markup_tg_logger.formatters.base import BaseMarkupFormatter
 from markup_tg_logger.handler import TelegramHandler
@@ -14,7 +16,7 @@ from markup_tg_logger.types import ParseMode
 SOURCE_TEXT = 'source text'
 FORMATTED_TEXT = 'formatted text'
 SPLITTED_TEXT = ['splitted text part 1', 'splitted text text part 2']
-PARSE_MODE = 'HTML'
+PARSE_MODE: Literal['HTML'] = 'HTML'
 LEVEL = logging.INFO
 DISABLE_NOTIFICATION = True
 BOT_TOKEN = 'test-bot-token'
@@ -90,6 +92,7 @@ class FakeSender(ITelegramSender):
         }
         
 
+@pytest.mark.unit()
 def test_emit() -> None:
     sender = FakeSender()
 
@@ -119,3 +122,58 @@ def test_emit() -> None:
     assert data['text'] == SPLITTED_TEXT[1]
     assert data['parse_mode'] == PARSE_MODE
     assert data['disable_notification'] == DISABLE_NOTIFICATION
+
+
+def test_init_from_valid_config() -> None:
+    config: dict[str, Any] = {
+        'bot_token': BOT_TOKEN,
+        'chat_id': CHAT_ID,
+        'disable_notification': {
+            '()': 'markup_tg_logger.notifiers.LevelNotifier',
+            'level': 'ERROR',
+        },
+        'parse_mode': PARSE_MODE,
+        'message_splitter_factory': {
+            '': {'()': 'markup_tg_logger.message_splitters.BaseMessageSplitter'},
+            'HTML': {'()': 'markup_tg_logger.message_splitters.HtmlMessageSplitter'},
+        },
+        'sender': {
+            '()': 'markup_tg_logger.telegram_senders.requests.RequestsTelegramSender',
+        },
+    }
+
+    TelegramHandler(**config)
+
+
+@pytest.mark.unit()
+def test_init_from_invalid_config() -> None:
+    config: dict[str, Any]
+    with pytest.raises(ValueError):
+        config = {
+            'bot_token': BOT_TOKEN,
+            'chat_id': CHAT_ID,
+            'disable_notification': {
+                '()': 'markup_tg_logger.notifiers.UnexistingNotifier',
+            },
+        }
+        TelegramHandler(**config)
+
+    with pytest.raises(ValueError):
+        config = {
+            'bot_token': BOT_TOKEN,
+            'chat_id': CHAT_ID,
+            'message_splitter_factory': {
+                '': {'()': 'markup_tg_logger.message_splitters.UnexistingMessageSplitter'},
+            },
+        }
+        TelegramHandler(**config)
+
+    with pytest.raises(ValueError):
+        config = {
+            'bot_token': BOT_TOKEN,
+            'chat_id': CHAT_ID,
+            'sender': {
+                '()': 'markup_tg_logger.telegram_senders.UnexistingTelegramSender',
+            },
+        }
+        TelegramHandler(**config)
