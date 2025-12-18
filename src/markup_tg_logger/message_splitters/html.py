@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import override, TypeAlias
 
 from ..config import MAX_MESSAGE_LENGTH
-from ..exceptions import ImpossibleToSplitError, TagMismatchError
+from ..exceptions import ImpossibleToSplitError, TagMismatchError, InvalidMarkupError
 from .base import BaseMessageSplitter
 
 
@@ -37,7 +37,14 @@ class HtmlTagContainer:
     def start_tag(self) -> str:
         """Opening tag with attributes."""
 
-        attrs_text = ' '.join([f'{attr[0]}="{attr[1]}"' for attr in self._attrs])
+        attr_texts: list[str] = []
+        for attr in self._attrs:
+            if attr[1] is None:
+                attr_texts.append(f'{attr[0]}')
+            else:
+                attr_texts.append(f'{attr[0]}="{attr[1]}"')
+
+        attrs_text = ' '.join(attr_texts)
 
         return f'<{self._tag_name}>' if attrs_text == '' else f'<{self._tag_name} {attrs_text}>'
     
@@ -131,18 +138,38 @@ class HtmlMessageSplitter(BaseMessageSplitter):
         Raises:
             ImpossibleToSplitError: Unable to split text - markup length alone exceeds limit.
             TagMismatchError: The found closing tag does not match any opening tag in the stack.
+            InvalidMarkupError: Invalid HTML or not escaped text.
         """
 
+        source_text = text
+
         while '>' in text:
+            lt_index = text.find('<')
+            gt_index = text.index('>')
+            if lt_index == -1 or lt_index > gt_index:
+                raise InvalidMarkupError(
+                    parse_mode = 'HTML',
+                    char = '>',
+                    index = len(source_text) - len(text) + gt_index,
+                    text = source_text,
+                )
+
             # Text before the found tag.
-            index = text.index('<')
-            pop, text = text[:index], text[index+1:]
-            if pop != '':
+            pop, text = text[:lt_index], text[lt_index+1:]
+            if pop:
                 self._handle_text_node(pop, context)
 
             # Text inside the tag.
-            index = text.index('>')
-            pop, text = text[:index], text[index+1:]
+            gt_index = text.index('>')
+            if gt_index == 0:
+                raise InvalidMarkupError(
+                    parse_mode = 'HTML',
+                    char = '>',
+                    index = len(source_text) - len(text),
+                    text = source_text,
+                )
+
+            pop, text = text[:gt_index], text[gt_index+1:]
 
             if pop[0] == '/':
                 self._handle_end_tag(tag_name=pop[1:], context=context)
@@ -152,14 +179,18 @@ class HtmlMessageSplitter(BaseMessageSplitter):
                 attrs: list[HtmlAttribute] = []
                 if len(units) > 1:
                     for unit in units[1:]:
-                        attr_0, attr_1 = unit.split('=')
-                        attr_1 = attr_1[1:-1]
+                        if '=' in unit:
+                            attr_0, attr_1 = unit.split('=')
+                            attr_1 = attr_1[1:-1]
+                        else:
+                            attr_0 = unit
+                            attr_1 = None
                         attrs.append((attr_0, attr_1))
 
                 self._handle_start_tag(tag_name, attrs, context)
 
         # Text after the last tag.
-        if text != '':
+        if text:
             self._handle_text_node(text, context)
 
         # Create last message from rest.
@@ -211,13 +242,13 @@ class HtmlMessageSplitter(BaseMessageSplitter):
         """
 
         if len(context.stack) == 0:
-            raise TagMismatchError(f'Invalid HTML. Extra closing tag found: {tag_name}')
+            raise TagMismatchError(f'Invalid HTML. Extra closing tag found: "</{tag_name}>".')
         
         tag_names = [tag.tag_name for tag in context.stack]
 
         if tag_name not in tag_names:
             raise TagMismatchError(
-                f'Invalid HTML. The closing tag </{tag_name}> does not have a corresponding '
+                f'Invalid HTML. The closing tag "</{tag_name}>" does not have a corresponding '
                 f'opening tag in the stack.'
             )
         

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
+## [Unreleased]
+
+### Changed
+- Improved handling of malformed HTML code when splitting text into messages using
+  `HtmlMessageSplitter`. Now throws explicit, informative exceptions when encountering issues
+  like improper escaping. Error messages include the problematic character, its position,
+  surrounding context, and the full text for easier debugging.
+
+## Fixed
+- Fixed HTML attribute parsing to support valueless attributes. Currently, Telegram supports only
+  one such attribute, `expandable` in the `blockquote` tag. Tags containing such attributes
+  previously caused a `HtmlMessageSplitter` failure.
+
+
 ## [1.0.0] - 2025-07-16
 - [Github](https://github.com/korandr/markup-tg-logger/releases/tag/v1.0.0)
 - [PyPI](https://pypi.org/project/markup-tg-logger/1.0.0/)

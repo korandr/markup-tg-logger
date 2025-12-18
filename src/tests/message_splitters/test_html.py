@@ -66,6 +66,22 @@ def test_start_tag_without_end_tag() -> None:
     assert messages == ['12345', '<b>123</b>', '<b>45</b>']
 
 @pytest.mark.unit()
+def test_html_attributes() -> None:
+    limit = 60
+    text = 'sample text <tag value-attr="value" bool-attr>sample text in tag</tag> sample text'
+    
+    splitter = HtmlMessageSplitter(max_message_length=limit)
+    messages = splitter.split(text)
+
+    print(messages)
+
+    assert messages == [
+        'sample text <tag value-attr="value" bool-attr>sample t</tag>',
+        '<tag value-attr="value" bool-attr>ext in tag</tag> sample te',
+        'xt'
+    ]
+
+@pytest.mark.unit()
 def test_markup_only() -> None:
     text = '<a><b><c></c></b></a>'
     limit = len(text) + 1
@@ -84,3 +100,18 @@ def test_limit_too_small() -> None:
     
     with pytest.raises(SplitterException):
         splitter.split(text)
+
+@pytest.mark.unit()
+def test_invalid_markup() -> None:
+    limit = 10
+    
+    splitter = HtmlMessageSplitter(max_message_length=limit)
+
+    with pytest.raises(SplitterException):
+        splitter.split('sample text <> sample text')
+
+    with pytest.raises(SplitterException):
+        splitter.split('sample text >< sample text')
+
+    with pytest.raises(SplitterException):
+        splitter.split('sample text tag> sample text')
