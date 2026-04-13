@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
-## Unreleased
+
+## [1.1.1] - 2026-04-13
+- [Github](https://github.com/korandr/markup-tg-logger/releases/tag/v1.1.1)
+- [PyPI](https://pypi.org/project/markup-tg-logger/1.1.1/)
 
 ### Added
 - Added the ability to override the Telegram Bot API address using the `base_url` parameter
