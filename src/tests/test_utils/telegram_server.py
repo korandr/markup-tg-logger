@@ -8,8 +8,9 @@ from urllib.parse import urlparse
 
 HOST = 'localhost'
 PORT = 8080
-SAVE_JSON_ENDPOINT = '/save-json'
-BAD_REQUEST_ENDPOINT = '/bad-reqest'
+BOT_TOKEN = 'test-token'
+SAVE_JSON_ENDPOINT = 'save-json'
+BAD_REQUEST_ENDPOINT = 'bad-reqest'
 
 _ENCODING = 'utf-8'
 _CONTENT_TYPE_HEADER = 'Content-type'
@@ -73,9 +74,9 @@ class MockTelegramHandler(BaseHTTPRequestHandler):
 
         path = urlparse(self.path).path
 
-        if path == SAVE_JSON_ENDPOINT:
+        if path == f'/bot{BOT_TOKEN}/{SAVE_JSON_ENDPOINT}':
             self._save_json()
-        elif path == BAD_REQUEST_ENDPOINT:
+        elif path == f'/bot{BOT_TOKEN}/{BAD_REQUEST_ENDPOINT}':
             self._bad_request()
         else:
             self.send_response(404)

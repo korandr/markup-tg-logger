@@ -3,7 +3,7 @@ import json
 from typing import Any, override
 from urllib.parse import urlparse
 
-from ..config import MAX_MESSAGE_LENGTH, TELEGRAM_SEND_MESSAGE_URL
+from ..config import MAX_MESSAGE_LENGTH, TELEGRAM_BASE_URL, TELEGRAM_METHOD, TELEGRAM_FULL_URL
 from ..interfaces import ITelegramSender
 from ..exceptions import SenderError, TelegramApiError
 
@@ -21,14 +21,20 @@ class HttpClientTelegramSender(ITelegramSender):
     _CONTENT_TYPE_JSON = 'application/json'
     _ENCODING = 'utf-8'
 
-    def __init__(self, url: str = TELEGRAM_SEND_MESSAGE_URL) -> None:
+    def __init__(
+        self,
+        *,
+        base_url: str = TELEGRAM_BASE_URL,
+        method: str = TELEGRAM_METHOD,
+    ) -> None:
         """
         Args:
-            url: Telegram Bot API URL for the `sendMessage` method. Contains one required parameter
-                `{bot_token}`. Use default value. Overridden for tests only.
+            base_url: Telegram Bot API base URL. You can specify simple proxy here.
+            method: The Telegram Bot API method that will be used to send the message.
         """
 
-        self._url = url
+        self._base_url = base_url
+        self._method = method
 
     @override
     def send(
@@ -43,7 +49,11 @@ class HttpClientTelegramSender(ITelegramSender):
         if len(text) > self._MAX_MESSAGE_LENGTH:
             raise ValueError('Text exceeds message character limit')
         
-        url = self._url.format(bot_token=bot_token)
+        url = TELEGRAM_FULL_URL.format(
+            bot_token = bot_token,
+            base_url = self._base_url,
+            method = self._method,
+        )
         parsed_url = urlparse(url)
         protocol = parsed_url.scheme
         host = parsed_url.netloc

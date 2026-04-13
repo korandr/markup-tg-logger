@@ -2,7 +2,7 @@ import html
 import logging
 import pytest
 
-from ..test_utils.telegram_server import HOST, PORT, JsonHub, SAVE_JSON_ENDPOINT
+from ..test_utils.telegram_server import HOST, PORT, JsonHub, SAVE_JSON_ENDPOINT, BOT_TOKEN
 
 from markup_tg_logger.formatters.html import HtmlFormatter
 from markup_tg_logger.handler import TelegramHandler
@@ -30,14 +30,14 @@ def test_usecase(telegram_server_json_hub: JsonHub) -> None:
         result_template = '<result>{text}</result>',
     )
 
-    sender = RequestsTelegramSender(url = f'http://{HOST}:{PORT}' + '/{bot_token}')
+    sender = RequestsTelegramSender(base_url=f'http://{HOST}:{PORT}', method=SAVE_JSON_ENDPOINT)
 
     splitter_factory = MessageSplitterFactory(
         parse_mode_to_splitter = {'HTML': HtmlMessageSplitter()}
     )
 
     handler = TelegramHandler(
-        bot_token = SAVE_JSON_ENDPOINT,
+        bot_token = BOT_TOKEN,
         chat_id = CHAT_ID,
         disable_notification = LevelNotifier(logging.WARNING),
         message_splitter_factory = splitter_factory,

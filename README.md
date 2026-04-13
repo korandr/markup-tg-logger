@@ -253,6 +253,13 @@ handler = TelegramHandler(
 )
 ```
 
+If you need to proxy requests to the Telegram Bot API, you can specify a custom `base_url`
+in the sender constructor:
+
+```python
+sender = HttpClientTelegramSender(base_url='https://api.telegram.yourproxy.com')
+```
+
 ### Configuration
 
 The library supports configuration using the standard
